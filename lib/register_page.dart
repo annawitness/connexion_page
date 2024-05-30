@@ -2,9 +2,10 @@
 
 import 'dart:convert';
 
-import 'package:connexion_page/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+
+import 'login_page.dart';
 
 class RegisterPage extends StatelessWidget {
   final TextEditingController _nomController = TextEditingController();
@@ -15,31 +16,51 @@ class RegisterPage extends StatelessWidget {
   final TextEditingController _phoneController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
+  Future<void> registerUser(String nom, String prenom, String email,
+      String password, String phone) async {
+    final String url =
+        'http://192.168.252.147/register'; // Changez localhost par l'IP locale si nécessaire
+
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'nom': nom,
+        'prenom': prenom,
+        'email': email,
+        'password': password,
+        'phone': phone,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      print('Inscription réussie');
+    } else {
+      print('Échec de l\'inscription: ${response.body}');
+    }
+  }
+
   Future<void> _submitForm(BuildContext context) async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    final response = await http.post(
-      Uri.parse('https://your-api-endpoint.com/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'nom': _nomController.text,
-        'prenom': _prenomController.text,
-        'email': _emailController.text,
-        'password': _passwordController.text,
-        'phone': _phoneController.text,
-      }),
-    );
+    try {
+      await registerUser(
+        _nomController.text,
+        _prenomController.text,
+        _emailController.text,
+        _passwordController.text,
+        _phoneController.text,
+      );
 
-    if (response.statusCode == 200) {
-      // Assumes API returns a success message in response body
-      final message = jsonDecode(response.body)['message'];
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: Text('Succès'),
-          content: Text(message),
+          content: Text('Inscription réussie'),
           actions: [
             TextButton(
               onPressed: () {
@@ -53,14 +74,12 @@ class RegisterPage extends StatelessWidget {
           ],
         ),
       );
-    } else {
-      // renvoi d'erreurs
-      final error = jsonDecode(response.body)['error'];
+    } catch (error) {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: Text('Erreur'),
-          content: Text(error),
+          content: Text('Échec de l\'inscription. Veuillez réessayer.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
